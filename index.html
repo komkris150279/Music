@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#070a14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="NeonSync 100%" />
+  <title>NeonSync Studio 100% — เครื่องเล่น MP3 ถอดเนื้อเพลง 100% &amp; อีควอไลเซอร์</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --bg-base: #070a14;
+      --bg-panel: rgba(13, 19, 36, 0.95);
+      --border-subtle: rgba(148, 163, 184, 0.16);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0; padding: 0; width: 100vw; height: 100vh; height: 100dvh; overflow: hidden;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(139, 92, 246, 0.2), transparent 36%),
+        radial-gradient(circle at 88% 85%, rgba(0, 245, 212, 0.15), transparent 38%),
+        #070a14;
+      color: #f1f5f9;
+      font-family: 'Noto Sans Thai', 'Plus Jakarta Sans', system-ui, sans-serif;
+      user-select: none;
+    }
+    .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+    .custom-scroll::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.35); }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.45); border-radius: 9999px; }
+
+    .app-shell { display: grid; grid-template-rows: 46px 1fr; width: 100vw; height: 100dvh; overflow: hidden; }
+    .studio-grid { display: grid; grid-template-columns: 245px 1fr 275px; gap: 8px; padding: 8px; height: 100%; overflow: hidden; }
+    @media (max-width: 1120px) {
+      .studio-grid { grid-template-columns: 1fr 260px; }
+      .left-col-panel { display: none !important; }
+    }
+    @media (max-width: 820px) {
+      .studio-grid { grid-template-columns: 1fr; padding: 6px; }
+      .right-col-panel { display: none !important; }
+    }
+
+    .glass-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+    }
+
+    /* Word-Level Dual-Layer Karaoke Sweep */
+    .lyric-line {
+      position: relative; padding: 6px 12px; border-radius: 10px; cursor: pointer;
+      transition: transform 0.18s ease, background-color 0.2s ease, opacity 0.22s ease;
+      opacity: 0.42; text-align: center; line-height: 1.5;
+      font-size: clamp(0.96rem, 1.55vw, 1.22rem); font-weight: 600; word-break: break-word;
+    }
+    .lyric-line:hover { opacity: 0.85; background: rgba(255, 255, 255, 0.05); }
+    .lyric-line.past { opacity: 0.56; }
+    .lyric-line.active {
+      opacity: 1; transform: scale(1.035);
+      background: linear-gradient(90deg, rgba(0, 245, 212, 0.12), rgba(139, 92, 246, 0.16), rgba(255, 42, 133, 0.12));
+      border: 1px solid rgba(0, 245, 212, 0.36);
+      box-shadow: 0 4px 20px rgba(0, 245, 212, 0.14);
+      font-weight: 800;
+    }
+    .lyric-text-wrap { position: relative; display: inline-block; max-width: 100%; }
+    .lyric-base { color: #94a3b8; }
+    .lyric-line.active .lyric-base { color: rgba(241, 245, 249, 0.34); }
+    .lyric-fill {
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, #00f5d4 0%, #38bdf8 50%, #ff2a85 100%);
+      -webkit-background-clip: text; background-clip: text;
+      color: transparent; -webkit-text-fill-color: transparent;
+      clip-path: inset(0 100% 0 0); pointer-events: none;
+      filter: drop-shadow(0 0 8px rgba(0, 245, 212, 0.45));
+      will-change: clip-path;
+    }
+    #fullLyricsView .lyric-line { font-size: clamp(1.3rem, 2.8vw, 2.35rem); padding: 10px 18px; margin-bottom: 4px; }
+    #fullLyricsView .lyric-line.active { transform: scale(1.045); }
+
+    .file-trigger-label { position: relative; overflow: hidden; cursor: pointer; }
+    .file-trigger-label input[type="file"] {
+      position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 30; font-size: 0;
+    }
+
+    input[type="range"].seek-slider {
+      -webkit-appearance: none; appearance: none; height: 6px; border-radius: 9999px;
+      background: rgba(51, 65, 85, 0.85); outline: none; cursor: pointer;
+    }
+    input[type="range"].seek-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%;
+      background: #00f5d4; box-shadow: 0 0 10px rgba(0, 245, 212, 0.85); cursor: pointer;
+    }
+
+    .eq-slider-wrap { display: flex; flex-direction: column; align-items: center; justify-content: space-between; height: 100%; }
+    .eq-vertical-box { position: relative; width: 22px; height: 92px; display: flex; align-items: center; justify-content: center; }
+    input[type="range"].eq-range {
+      -webkit-appearance: none; appearance: none; width: 88px; height: 5px; transform: rotate(-90deg);
+      background: rgba(51, 65, 85, 0.9); border-radius: 9999px; outline: none; cursor: pointer;
+    }
+    input[type="range"].eq-range::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none; width: 13px; height: 13px; border-radius: 50%;
+      background: linear-gradient(135deg, #00f5d4, #8b5cf6); border: 2px solid #070a14;
+      box-shadow: 0 0 7px rgba(0, 245, 212, 0.7); cursor: pointer;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 12px rgba(0, 245, 212, 0.3), 0 0 22px rgba(255, 42, 133, 0.22); }
+      50% { box-shadow: 0 0 18px rgba(0, 245, 212, 0.55), 0 0 30px rgba(255, 42, 133, 0.42); }
+    }
+    .ai-glow-btn { animation: pulseGlow 2.4s infinite ease-in-out; }
+  </style>
+</head>
+<body>
+  <audio id="audioPlayer" crossorigin="anonymous" preload="metadata"></audio>
+
+  <div class="app-shell">
+    <!-- TOP HEADER -->
+    <header class="flex items-center justify-between px-2.5 bg-[#090e1d]/95 border-b border-slate-800/80 z-30 gap-1.5">
+      <div class="flex items-center gap-1.5 min-w-0">
+        <div class="flex items-center gap-1.5 pr-1 shrink-0">
+          <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-400 via-violet-500 to-pink-500 flex items-center justify-center font-extrabold text-slate-950 text-xs shadow">NS</div>
+          <span class="font-extrabold text-xs tracking-tight bg-gradient-to-r from-cyan-300 via-white to-pink-400 bg-clip-text text-transparent hidden md:inline">NeonSync 100%</span>
+        </div>
+        <button id="tabMainView" type="button" onclick="setActiveView('main')" class="px-2 py-1 rounded-lg text-[11px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 whitespace-nowrap">🎵 หน้าหลัก</button>
+        <button id="tabFullLyricsView" type="button" onclick="setActiveView('full')" class="px-2 py-1 rounded-lg text-[11px] font-bold bg-slate-800/85 hover:bg-pink-500/20 text-slate-200 hover:text-pink-300 border border-slate-700/80 whitespace-nowrap">🎤 เต็มจอ</button>
+      </div>
+
+      <div class="flex items-center gap-1 shrink-0">
+        <button type="button" onclick="openModal('libraryModal')" class="px-2 py-1 rounded-lg text-[11px] font-bold bg-slate-800/90 hover:bg-violet-500/20 text-amber-300 border border-slate-700/80 flex items-center gap-1 whitespace-nowrap">
+          📂 คลัง <span id="headerTrackCount" class="px-1 rounded bg-slate-950 text-cyan-300 text-[10px]">0</span>
+        </button>
+        <button type="button" onclick="openModal('eqModal')" class="px-2 py-1 rounded-lg text-[11px] font-bold bg-slate-800/90 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/35 flex items-center gap-1 whitespace-nowrap">
+          🎛️ EQ <span id="headerEqStatusBadge" class="px-1 rounded text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300">ON</span>
+        </button>
+        <button type="button" onclick="openApiKeyModal()" class="px-2 py-1 rounded-lg text-[11px] font-bold bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 border border-amber-400/45 flex items-center gap-1 whitespace-nowrap">
+          🔑 <span class="hidden sm:inline">API Key</span><span id="apiKeyDot" class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+        </button>
+        <div class="hidden lg:flex items-center bg-slate-900/90 border border-slate-700/80 rounded-lg px-1 py-0.5 text-[10px]">
+          <button type="button" onclick="adjustSyncOffset(-0.1)" class="px-1.5 py-0.5 hover:text-cyan-300 font-bold">-0.1s</button>
+          <span id="syncOffsetBadge" class="px-1 font-mono text-cyan-300 font-bold">+0.00s</span>
+          <button type="button" onclick="adjustSyncOffset(0.1)" class="px-1.5 py-0.5 hover:text-pink-300 font-bold">+0.1s</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 3-COLUMN STUDIO -->
+    <main class="studio-grid">
+      <!-- LEFT: LIBRARY -->
+      <section class="left-col-panel glass-card flex flex-col overflow-hidden p-2.5">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800/80">
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-extrabold text-slate-100">📂 คลังเพลง</span>
+            <span id="sidebarTrackCount" class="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 font-bold">0 เพลง</span>
+          </div>
+          <button type="button" onclick="openModal('libraryModal')" class="text-[10px] px-2 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold">ขยายคลัง</button>
+        </div>
+        <div class="flex gap-1.5 mb-2">
+          <input id="sidebarSearchInput" type="text" oninput="renderTrackLists()" placeholder="ค้นหาเพลงในคลัง..." class="flex-1 min-w-0 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400" />
+          <label class="file-trigger-label px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-bold text-amber-300 flex items-center shrink-0">
+            📄 .LRC<input type="file" accept=".lrc,.txt" multiple onchange="handleFileSelection(event)" />
+          </label>
+        </div>
+        <div id="sidebarTrackList" class="flex-1 overflow-y-auto custom-scroll space-y-1.5 pr-0.5"></div>
+      </section>
+
+      <!-- CENTER: VISUALIZER + 3-WAY ACTION ROW + LYRICS + TRANSPORT -->
+      <section class="glass-card flex flex-col overflow-hidden p-2.5 relative">
+        <div id="visualizerStageBox" onclick="cycleVisualizerMode()" title="คลิกเพื่อเปลี่ยนลูกเล่นคลื่นเสียง"
+          class="relative w-full h-[142px] sm:h-[152px] shrink-0 rounded-xl overflow-hidden border border-slate-800/90 bg-[#050811] mb-2 cursor-pointer">
+          <canvas id="visualizerCanvas" class="w-full h-full block"></canvas>
+          <div class="absolute top-2 left-2.5 flex items-center gap-2 pointer-events-none bg-slate-950/65 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 max-w-[82%]">
+            <div class="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-400 via-violet-500 to-pink-500 flex items-center justify-center text-[10px] font-extrabold text-slate-950 shrink-0 shadow">♪</div>
+            <div class="min-w-0">
+              <div id="nowPlayingTitle" class="text-xs font-extrabold text-white truncate">ยังไม่มีเพลงในคลัง</div>
+              <div id="nowPlayingSubtitle" class="text-[10px] text-cyan-300/90 truncate">กดปุ่ม "+ เพิ่มเพลง MP3" ด้านล่าง</div>
+            </div>
+          </div>
+          <div class="absolute bottom-1.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+            <span id="visModeCaption" class="text-[10px] font-bold text-slate-200/90 bg-slate-950/65 px-2 py-0.5 rounded-md border border-white/10 truncate">🌈 คลื่นสีรุ้ง — แท่งความถี่ไล่เฉดสีรุ้งพร้อมยอดพีคและเงาสะท้อน</span>
+          </div>
+        </div>
+
+        <!-- 3-WAY ACTION BAR -->
+        <div class="grid grid-cols-3 gap-1.5 shrink-0 mb-1.5">
+          <label class="file-trigger-label h-9 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-extrabold text-[11px] sm:text-xs flex items-center justify-center gap-1 shadow-md px-1.5">
+            <span>➕</span><span class="truncate">เพิ่มเพลง MP3</span>
+            <input type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.lrc" multiple onchange="handleFileSelection(event)" />
+          </label>
+          <button type="button" onclick="transcribeCurrentTrack100()"
+            class="ai-glow-btn h-9 rounded-xl bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white font-extrabold text-[11px] sm:text-xs flex items-center justify-center gap-1 shadow-md px-1.5 border border-pink-300/30">
+            <span>✨</span><span class="truncate">ถอดเนื้อ 100%</span>
+          </button>
+          <button id="visDropdownTrigger" type="button" onclick="toggleVisPopover(event)"
+            class="h-9 rounded-xl bg-gradient-to-r from-amber-500/90 to-orange-500/90 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-extrabold text-[11px] sm:text-xs flex items-center justify-center gap-1 shadow-md px-1.5">
+            <span id="visBtnLabel" class="truncate">🎨 คลื่นเสียง ▾</span>
+          </button>
+        </div>
+
+        <!-- UTILITY BAR -->
+        <div class="flex items-center justify-between gap-1 shrink-0 mb-1.5 text-[11px]">
+          <div class="flex items-center gap-1 min-w-0">
+            <button type="button" onclick="openLyricEditorModal()" class="px-2 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700/80 font-semibold whitespace-nowrap">📝 แก้ไข / Sync</button>
+            <button type="button" onclick="exportCurrentLrc()" class="px-2 py-1 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-cyan-300 border border-slate-700/80 font-semibold whitespace-nowrap">💾 .LRC</button>
+          </div>
+          <div class="flex items-center gap-1 shrink-0">
+            <button type="button" onclick="adjustSyncOffset(-0.1)" class="lg:hidden px-1.5 py-1 rounded-lg bg-slate-800 text-cyan-300 font-bold">-0.1s</button>
+            <button type="button" onclick="adjustSyncOffset(0.1)" class="lg:hidden px-1.5 py-1 rounded-lg bg-slate-800 text-pink-300 font-bold">+0.1s</button>
+            <button type="button" onclick="setActiveView('full')" class="hidden sm:flex px-2 py-1 rounded-lg bg-slate-800/90 hover:bg-pink-500/20 text-pink-300 border border-slate-700/80 font-semibold whitespace-nowrap">⛶ เต็มจอ</button>
+          </div>
+        </div>
+
+        <!-- PROGRESS BAR -->
+        <div id="transcribeProgressBox" class="hidden shrink-0 mb-2 bg-slate-900/95 border border-cyan-500/40 rounded-xl p-2">
+          <div class="flex items-center justify-between text-[11px] mb-1">
+            <span id="transcribeStatusText" class="font-bold text-cyan-300 truncate">กำลังวิเคราะห์เสียงและถอดเนื้อเพลง 100%...</span>
+            <span id="transcribePercentText" class="font-mono font-extrabold text-pink-400 ml-2">0%</span>
+          </div>
+          <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div id="transcribeProgressBar" class="h-full bg-gradient-to-r from-cyan-400 via-violet-500 to-pink-500 transition-all duration-300" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- LYRICS STAGE -->
+        <div class="relative flex-1 min-h-0 rounded-xl bg-slate-950/65 border border-slate-800/80 overflow-hidden flex flex-col">
+          <div id="emptyLyricsState" class="absolute inset-0 flex flex-col items-center justify-center p-4 text-center z-10">
+            <div class="w-11 h-11 rounded-2xl bg-slate-800/90 border border-slate-700 flex items-center justify-center text-xl mb-2">🎤</div>
+            <h2 class="text-sm sm:text-base font-extrabold text-white mb-1">เวทีเนื้อเพลงคาราโอเกะพร้อมใช้งาน 100%</h2>
+            <p class="text-[11px] text-slate-400 max-w-sm mb-3">
+              กดปุ่ม <span class="text-cyan-300 font-bold">"+ เพิ่มเพลง MP3"</span> แล้วกด <span class="text-pink-400 font-bold">"✨ ถอดเนื้อ 100%"</span> เพื่อสร้างเนื้อร้องพร้อมแถบสีเลื่อนตรงคำร้อง
+            </p>
+            <div class="flex flex-wrap items-center justify-center gap-2">
+              <label class="file-trigger-label px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-extrabold text-xs shadow">
+                ➕ เลือกไฟล์เพลง MP3
+                <input type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.lrc" multiple onchange="handleFileSelection(event)" />
+              </label>
+              <button type="button" onclick="openApiKeyModal()" class="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-amber-300 font-bold text-xs">
+                🔑 ตั้งค่า Gemini API Key
+              </button>
+            </div>
+          </div>
+          <div id="lyricsContainer" class="flex-1 overflow-y-auto custom-scroll px-3 py-8 space-y-1.5 scroll-smooth"></div>
+        </div>
+
+        <!-- TRANSPORT -->
+        <div class="shrink-0 pt-2 mt-1.5 border-t border-slate-800/80">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span id="currentTimeLabel" class="text-[11px] font-mono text-cyan-300 w-10 text-right">00:00</span>
+            <input id="seekSlider" type="range" min="0" max="1000" value="0" class="seek-slider flex-1" oninput="handleSeekInput(this.value)" />
+            <span id="durationTimeLabel" class="text-[11px] font-mono text-slate-400 w-10">00:00</span>
+          </div>
+          <div class="flex items-center justify-between gap-1.5">
+            <div class="flex items-center gap-1">
+              <button id="shuffleBtn" type="button" onclick="toggleShuffle()" class="w-7 h-7 rounded-lg bg-slate-800/90 text-slate-400 hover:text-white flex items-center justify-center text-xs border border-slate-700/70">🔀</button>
+              <button id="loopBtn" type="button" onclick="toggleLoop()" class="w-7 h-7 rounded-lg bg-slate-800/90 text-slate-400 hover:text-white flex items-center justify-center text-xs border border-slate-700/70">🔁</button>
+              <button type="button" onclick="openModal('eqModal')" class="lg:hidden px-2 h-7 rounded-lg bg-slate-800 text-cyan-300 text-[11px] font-bold border border-cyan-500/35">🎛️ EQ</button>
+              <button type="button" onclick="openModal('libraryModal')" class="md:hidden px-2 h-7 rounded-lg bg-slate-800 text-amber-300 text-[11px] font-bold border border-slate-700">📂 คลัง</button>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="playPrevTrack()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center text-xs border border-slate-700">⏮</button>
+              <button id="playPauseBtn" type="button" onclick="togglePlayPause()" class="w-10 h-10 rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 font-extrabold flex items-center justify-center text-base shadow-lg">▶</button>
+              <button type="button" onclick="playNextTrack()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center text-xs border border-slate-700">⏭</button>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button id="muteBtn" type="button" onclick="toggleMute()" class="text-xs text-slate-300">🔊</button>
+              <input id="volumeSlider" type="range" min="0" max="1" step="0.02" value="0.9" oninput="setVolume(this.value)" class="seek-slider w-14 sm:w-20" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: 10-BAND EQUALIZER & DSP -->
+      <aside class="right-col-panel glass-card flex flex-col overflow-hidden p-2.5">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800/80">
+          <span class="text-xs font-extrabold text-white">🎛️ อีควอไลเซอร์ 10 แบนด์</span>
+          <button id="sideEqToggleBtn" type="button" onclick="toggleEqMaster()" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">● เปิด EQ</button>
+        </div>
+        <div class="mb-2">
+          <div class="text-[10px] font-bold text-slate-400 mb-1">พรีเซ็ตเสียงสำเร็จรูป</div>
+          <div id="sideEqPresets" class="grid grid-cols-4 gap-1"></div>
+        </div>
+        <div class="flex-1 min-h-0 bg-slate-950/75 border border-slate-800/90 rounded-xl p-2 flex flex-col justify-between mb-2">
+          <div id="sideEqBandsContainer" class="grid grid-cols-10 gap-0.5 h-full items-center"></div>
+        </div>
+        <div class="space-y-2 bg-slate-900/75 border border-slate-800/80 rounded-xl p-2.5 text-[11px]">
+          <div>
+            <div class="flex justify-between mb-0.5"><span class="font-bold text-cyan-300">🔊 เพิ่มพลังเบส</span><span id="bassBoostLabel" class="font-mono text-slate-300">0 dB</span></div>
+            <input id="bassBoostSlider" type="range" min="0" max="15" step="1" value="0" oninput="setBassBoost(this.value)" class="seek-slider w-full" />
+          </div>
+          <div>
+            <div class="flex justify-between mb-0.5"><span class="font-bold text-pink-300">🌌 เสียงก้องฮอลล์</span><span id="echoWetLabel" class="font-mono text-slate-300">0%</span></div>
+            <input id="echoWetSlider" type="range" min="0" max="0.65" step="0.05" value="0" oninput="setEchoWet(this.value)" class="seek-slider w-full" />
+          </div>
+          <div>
+            <div class="flex justify-between mb-0.5"><span class="font-bold text-amber-300">⚡ ความเร็วเพลง</span><span id="speedLabel" class="font-mono text-slate-300">1.00x</span></div>
+            <input id="speedSlider" type="range" min="0.75" max="1.35" step="0.05" value="1" oninput="setPlaybackSpeed(this.value)" class="seek-slider w-full" />
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- VISUALIZER POPOVER MENU -->
+  <div id="visPopoverMenu" class="hidden fixed z-[9999] w-64 bg-[#0d1428] border border-cyan-400/45 rounded-2xl shadow-2xl p-2 text-xs">
+    <div class="flex items-center justify-between px-2 py-1 border-b border-slate-800 mb-1">
+      <span class="font-extrabold text-cyan-300">🎨 เลือกลูกเล่นคลื่นเสียง</span>
+      <button type="button" onclick="toggleVisualizerEnabled()" id="visPowerToggleBtn" class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[10px]">เปิดอยู่</button>
+    </div>
+    <div id="visModeOptionsList" class="space-y-1"></div>
+  </div>
+
+  <!-- FULLSCREEN LYRICS OVERLAY -->
+  <div id="fullLyricsView" class="hidden fixed inset-0 z-[800] bg-[#060913]/98 backdrop-blur-2xl flex flex-col">
+    <div class="flex items-center justify-between px-3 py-2 border-b border-slate-800/90 bg-slate-950/80 gap-2">
+      <div class="min-w-0">
+        <div id="fullViewSongTitle" class="text-xs sm:text-sm font-extrabold text-white truncate">โหมดเนื้อร้องเต็มหน้าจอ</div>
+        <div class="text-[10px] text-cyan-300">แตะบรรทัดใดก็ได้เพื่อกระโดดไปยังท่อนนั้น</div>
+      </div>
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button type="button" onclick="transcribeCurrentTrack100()" class="px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-pink-600 text-white font-extrabold text-[11px]">✨ ถอดเนื้อ 100%</button>
+        <button type="button" onclick="adjustSyncOffset(-0.1)" class="px-2 py-1.5 rounded-lg bg-slate-800 text-cyan-300 font-bold text-[11px]">-0.1s</button>
+        <button type="button" onclick="adjustSyncOffset(0.1)" class="px-2 py-1.5 rounded-lg bg-slate-800 text-pink-300 font-bold text-[11px]">+0.1s</button>
+        <button type="button" onclick="setActiveView('main')" class="px-2.5 py-1.5 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/40 font-extrabold text-[11px]">✕ ปิดเต็มจอ</button>
+      </div>
+    </div>
+    <div id="fullLyricsContainer" class="flex-1 overflow-y-auto custom-scroll px-4 py-12 space-y-2 scroll-smooth"></div>
+    <div class="px-4 py-2.5 border-t border-slate-800/90 bg-slate-950/90 flex items-center gap-3">
+      <button id="fullPlayPauseBtn" type="button" onclick="togglePlayPause()" class="w-10 h-10 rounded-full bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 font-extrabold flex items-center justify-center shrink-0">▶</button>
+      <span id="fullCurrentTime" class="text-xs font-mono text-cyan-300">00:00</span>
+      <input id="fullSeekSlider" type="range" min="0" max="1000" value="0" oninput="handleSeekInput(this.value)" class="seek-slider flex-1" />
+      <span id="fullDurationTime" class="text-xs font-mono text-slate-400">00:00</span>
+    </div>
+  </div>
+
+  <!-- API KEY MODAL -->
+  <div id="apiKeyModal" class="hidden fixed inset-0 z-[950] bg-black/80 backdrop-blur-md flex items-center justify-center p-3">
+    <div class="w-full max-w-md bg-[#0c1326] border border-amber-400/45 rounded-2xl p-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-800">
+        <h3 class="text-sm font-extrabold text-amber-300">🔑 ตั้งค่า Gemini API Key (สำหรับถอดเนื้อเพลงบนมือถือ)</h3>
+        <button type="button" onclick="closeModal('apiKeyModal')" class="text-slate-400 hover:text-white text-sm font-bold px-2">✕</button>
+      </div>
+      <p class="text-xs text-slate-300 leading-relaxed mb-3">
+        ใส่ <b>Gemini API Key</b> ของคุณด้านล่าง ระบบจะบันทึกไว้ในเครื่องอัตโนมัติ พร้อมระบบสลับโมเดลสำรองเมื่อเซิร์ฟเวอร์หนาแน่น
+      </p>
+      <div class="mb-3">
+        <div class="flex items-center justify-between mb-1">
+          <label class="text-[11px] font-bold text-slate-300">รหัส Gemini API Key (ขึ้นต้นด้วย AIzaSy...)</label>
+          <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" class="text-[11px] font-bold text-cyan-300 underline">ขอรับ Key ฟรีที่นี่ ↗</a>
+        </div>
+        <input id="geminiApiKeyInput" type="password" placeholder="วางรหัส AIzaSy... ที่นี่" class="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl px-3 py-2 text-xs text-white font-mono outline-none" />
+      </div>
+      <div id="apiKeyTestResult" class="hidden mb-3 px-3 py-2 rounded-xl text-xs font-semibold"></div>
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <button type="button" onclick="testGeminiApiKey()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs border border-slate-700">⚡ ทดสอบการเชื่อมต่อ</button>
+        <div class="flex items-center gap-1.5">
+          <button type="button" onclick="clearGeminiApiKey()" class="px-3 py-2 rounded-xl bg-rose-500/15 text-rose-300 font-bold text-xs">ลบ Key</button>
+          <button type="button" onclick="saveGeminiApiKey()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 font-extrabold text-xs shadow">💾 บันทึก API Key</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MUSIC LIBRARY MODAL -->
+  <div id="libraryModal" class="hidden fixed inset-0 z-[900] bg-black/80 backdrop-blur-md flex items-center justify-center p-3">
+    <div class="w-full max-w-xl max-h-[86vh] bg-[#0c1326] border border-slate-700 rounded-2xl p-4 flex flex-col shadow-2xl">
+      <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-800">
+        <h3 class="text-sm font-extrabold text-white">📂 คลังเพลงทั้งหมด (บันทึกในเครื่องอัตโนมัติ)</h3>
+        <button type="button" onclick="closeModal('libraryModal')" class="text-slate-400 hover:text-white font-bold px-2">✕</button>
+      </div>
+      <div class="flex flex-wrap gap-2 mb-3">
+        <label class="file-trigger-label px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-950 font-extrabold text-xs">
+          ➕ เพิ่มไฟล์ MP3 / .LRC
+          <input type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.lrc" multiple onchange="handleFileSelection(event)" />
+        </label>
+        <button type="button" onclick="clearAllTracks()" class="px-3 py-2 rounded-xl bg-rose-500/15 text-rose-300 font-bold text-xs ml-auto">🗑️ ล้างคลังทั้งหมด</button>
+      </div>
+      <div id="modalTrackList" class="flex-1 overflow-y-auto custom-scroll space-y-1.5 pr-1"></div>
+    </div>
+  </div>
+
+  <!-- EQUALIZER MODAL -->
+  <div id="eqModal" class="hidden fixed inset-0 z-[900] bg-black/80 backdrop-blur-md flex items-center justify-center p-3">
+    <div class="w-full max-w-md bg-[#0c1326] border border-cyan-500/40 rounded-2xl p-4 shadow-2xl">
+      <div class="flex items-center justify-between pb-2.5 mb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <h3 class="text-sm font-extrabold text-white">🎛️ อีควอไลเซอร์ 10 แบนด์</h3>
+          <button id="modalEqToggleBtn" type="button" onclick="toggleEqMaster()" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">● เปิด EQ</button>
+        </div>
+        <button type="button" onclick="closeModal('eqModal')" class="text-slate-400 hover:text-white font-bold px-2">✕</button>
+      </div>
+      <div id="modalEqPresets" class="grid grid-cols-4 gap-1.5 mb-3"></div>
+      <div class="bg-slate-950/85 border border-slate-800 rounded-xl p-2.5 h-32 mb-3">
+        <div id="modalEqBandsContainer" class="grid grid-cols-10 gap-1 h-full items-center"></div>
+      </div>
+      <div class="space-y-2 text-xs">
+        <div>
+          <div class="flex justify-between mb-0.5"><span class="font-bold text-cyan-300">🔊 เพิ่มพลังเบส</span><span id="modalBassLabel" class="font-mono">0 dB</span></div>
+          <input id="modalBassSlider" type="range" min="0" max="15" step="1" value="0" oninput="setBassBoost(this.value)" class="seek-slider w-full" />
+        </div>
+        <div>
+          <div class="flex justify-between mb-0.5"><span class="font-bold text-pink-300">🌌 เสียงก้องฮอลล์</span><span id="modalEchoLabel" class="font-mono">0%</span></div>
+          <input id="modalEchoSlider" type="range" min="0" max="0.65" step="0.05" value="0" oninput="setEchoWet(this.value)" class="seek-slider w-full" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LYRIC EDITOR & TAP-SYNC STUDIO MODAL -->
+  <div id="lyricEditorModal" class="hidden fixed inset-0 z-[900] bg-black/80 backdrop-blur-md flex items-center justify-center p-3">
+    <div class="w-full max-w-xl max-h-[88vh] bg-[#0c1326] border border-slate-700 rounded-2xl p-4 flex flex-col shadow-2xl">
+      <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800">
+        <h3 class="text-sm font-extrabold text-white">📝 แก้ไขเนื้อเพลง / ซิงค์อัตโนมัติ / Tap-Sync</h3>
+        <button type="button" onclick="closeModal('lyricEditorModal')" class="text-slate-400 hover:text-white font-bold px-2">✕</button>
+      </div>
+      <textarea id="lyricEditorTextarea" rows="10" placeholder="วางเนื้อเพลงที่นี่ บรรทัดละ 1 ท่อนร้อง..." class="flex-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 font-mono leading-relaxed focus:outline-none focus:border-cyan-400 mb-3"></textarea>
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <button type="button" onclick="autoAlignPlainLyricsToVocal()" class="px-3 py-2 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 font-extrabold text-xs">⚡ ซิงค์อัตโนมัติ</button>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="tapSyncNextLine()" class="px-3 py-2 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 font-extrabold text-xs">👆 แตะจับจังหวะ</button>
+          <button type="button" onclick="saveEditedLyrics()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 font-extrabold text-xs">💾 บันทึกเนื้อเพลง</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastBox" class="fixed bottom-16 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none opacity-0 transition-opacity duration-300">
+    <div id="toastMessage" class="px-4 py-2 rounded-full bg-slate-900/95 border border-cyan-400/50 text-cyan-200 text-xs font-bold shadow-xl whitespace-nowrap"></div>
+  </div>
+  <script>
+    const EQ_FREQS = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+    const EQ_LABELS = ['32', '64', '125', '250', '500', '1K', '2K', '4K', '8K', '16K'];
+    const EQ_PRESETS = {
+      Flat: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      Pop: [-1, 2, 4, 4, 1, -1, -1, 2, 3, 4],
+      Rock: [5, 4, 2, -1, -2, 0, 3, 4, 5, 5],
+      Bass: [7, 6, 4, 2, 0, 0, 0, 1, 2, 2],
+      Vocal: [-2, -2, 0, 2, 5, 5, 4, 2, 0, -1],
+      Jazz: [3, 2, 1, 2, -1, -1, 0, 2, 3, 4],
+      EDM: [6, 5, 2, 0, -2, 1, 3, 4, 6, 6],
+      Live: [3, 2, 0, 1, 2, 2, 3, 4, 4, 3]
+    };
+
+    const VIS_MODES = [
+      { id: 'rainbow', icon: '🌈', name: 'คลื่นสีรุ้ง', desc: 'แท่งความถี่ไล่เฉดสีรุ้งพร้อมยอดพีคและเงาสะท้อน' },
+      { id: 'wave', icon: '〰️', name: 'คลื่นเสียงนีออน', desc: 'ริบบิ้นคลื่นเสียงเรืองแสง 3 ชั้นซ้อนมิติ' },
+      { id: 'ring', icon: '🔮', name: 'วงแหวนจักรวาล', desc: 'วงแหวนสเปกตรัมหมุนรอบศูนย์กลางเต้นตามจังหวะเบส' },
+      { id: 'aurora', icon: '🔥', name: 'เปลวไฟออโรร่า', desc: 'คลื่นแสงออโรร่าสมมาตรไล่เฉดสีชมพู-ฟ้า-ทอง' },
+      { id: 'particles', icon: '💫', name: 'กาแล็กซี่พาร์ติเคิล', desc: 'ละอองพลังงานหลากสีเชื่อมโยงตามจังหวะดนตรี' },
+      { id: 'mirror', icon: '🎛️', name: 'สเปกตรัมคู่', desc: 'แถบ LED สะท้อนบน-ล่างแบบสตูดิโอมืออาชีพ' }
+    ];
+
+    const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+
+    let tracks = [];
+    let currentTrackIndex = -1;
+    let isPlaying = false;
+    let isShuffle = false;
+    let isLoop = false;
+    let syncOffset = 0;
+    let isTranscribing = false;
+
+    let visModeIndex = 0;
+    let visEnabled = true;
+    let peakCaps = new Array(64).fill(0);
+    let particles = [];
+    let ringRotation = 0;
+
+    let audioCtx = null;
+    let mediaSource = null;
+    let analyserNode = null;
+    let eqFilters = [];
+    let bassFilter = null;
+    let convolverNode = null;
+    let dryGainNode = null;
+    let wetGainNode = null;
+    let eqMasterEnabled = true;
+    let currentEqGains = [...EQ_PRESETS.Flat];
+    let currentPresetName = 'Flat';
+    let currentBassBoost = 0;
+    let currentEchoWet = 0;
+
+    const audioEl = document.getElementById('audioPlayer');
+    const DB_NAME = 'NeonSyncStudio100DB';
+    const DB_STORE = 'tracks';
+    const API_KEY_STORAGE = 'neonsync_gemini_api_key';
+
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE, { keyPath: 'id' });
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function saveTrackToDB(track) {
+      try {
+        const db = await openDB();
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        tx.objectStore(DB_STORE).put({
+          id: track.id, title: track.title, artist: track.artist,
+          duration: track.duration || 0, blob: track.blob || null, lyrics: track.lyrics || []
+        });
+      } catch {}
+    }
+
+    async function loadTracksFromDB() {
+      try {
+        const db = await openDB();
+        return new Promise((resolve) => {
+          const tx = db.transaction(DB_STORE, 'readonly');
+          const req = tx.objectStore(DB_STORE).getAll();
+          req.onsuccess = () => {
+            resolve((req.result || []).map((item) => ({
+              ...item, url: item.blob ? URL.createObjectURL(item.blob) : ''
+            })).filter((t) => t.url));
+          };
+          req.onerror = () => resolve([]);
+        });
+      } catch { return []; }
+    }
+
+    async function deleteTrackFromDB(id) {
+      try {
+        const db = await openDB();
+        db.transaction(DB_STORE, 'readwrite').objectStore(DB_STORE).delete(id);
+      } catch {}
+    }
+
+    function getSavedApiKey() { return (localStorage.getItem(API_KEY_STORAGE) || '').trim(); }
+
+    function updateApiKeyIndicator() {
+      const dot = document.getElementById('apiKeyDot');
+      if (dot) {
+        dot.className = getSavedApiKey()
+          ? 'w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]'
+          : 'w-1.5 h-1.5 rounded-full bg-rose-400';
+      }
+    }
+
+    function openApiKeyModal() {
+      document.getElementById('geminiApiKeyInput').value = getSavedApiKey();
+      document.getElementById('apiKeyTestResult').classList.add('hidden');
+      openModal('apiKeyModal');
+    }
+
+    function saveGeminiApiKey() {
+      const val = document.getElementById('geminiApiKeyInput').value.trim();
+      if (!val) return showToast('กรุณาวางรหัส Gemini API Key ก่อนบันทึก');
+      localStorage.setItem(API_KEY_STORAGE, val);
+      updateApiKeyIndicator();
+      closeModal('apiKeyModal');
+      showToast('✅ บันทึก Gemini API Key เรียบร้อยแล้ว!');
+    }
+
+    function clearGeminiApiKey() {
+      localStorage.removeItem(API_KEY_STORAGE);
+      document.getElementById('geminiApiKeyInput').value = '';
+      updateApiKeyIndicator();
+      showToast('ลบ API Key ออกจากเครื่องแล้ว');
+    }
+
+    async function generateWithFallbackModels(apiKey, payload, onRetryNotice) {
+      let lastError = null;
+      for (let mIdx = 0; mIdx < GEMINI_MODELS.length; mIdx++) {
+        const model = GEMINI_MODELS[mIdx];
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            if (!resp.ok) {
+              const errJson = await resp.json().catch(() => ({}));
+              const msg = errJson?.error?.message || `HTTP ${resp.status}`;
+              const isBusyOrOld = resp.status === 503 || resp.status === 429 || resp.status === 404 ||
+                /high demand|overloaded|no longer available|quota/i.test(msg);
+              lastError = new Error(msg);
+              if (isBusyOrOld) {
+                if (onRetryNotice) onRetryNotice(`สลับไปใช้โมเดลสำรอง (${GEMINI_MODELS[mIdx + 1] || model})...`);
+                await new Promise((r) => setTimeout(r, 900));
+                break;
+              }
+              throw lastError;
+            }
+            return await resp.json();
+          } catch (err) {
+            lastError = err;
+            if (!/high demand|overloaded|no longer available|404|503|429/i.test(String(err.message))) throw err;
+          }
+        }
+      }
+      throw lastError || new Error('เซิร์ฟเวอร์ AI หนาแน่น กรุณาลองใหม่อีกครั้งใน 1 นาที');
+    }
+
+    async function testGeminiApiKey() {
+      const val = document.getElementById('geminiApiKeyInput').value.trim();
+      const resBox = document.getElementById('apiKeyTestResult');
+      if (!val) {
+        resBox.textContent = '⚠️ กรุณากรอกรหัส API Key ก่อนทดสอบ';
+        resBox.className = 'mb-3 px-3 py-2 rounded-xl text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-400/40';
+        return;
+      }
+      resBox.textContent = '⏳ กำลังทดสอบการเชื่อมต่อกับ Gemini AI...';
+      resBox.className = 'mb-3 px-3 py-2 rounded-xl text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40';
+      try {
+        await generateWithFallbackModels(val, { contents: [{ parts: [{ text: 'Reply OK' }] }] });
+        localStorage.setItem(API_KEY_STORAGE, val);
+        updateApiKeyIndicator();
+        resBox.textContent = '✅ เชื่อมต่อสำเร็จ! บันทึก API Key เรียบร้อย พร้อมถอดเนื้อเพลง 100%';
+        resBox.className = 'mb-3 px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40';
+      } catch (err) {
+        localStorage.setItem(API_KEY_STORAGE, val);
+        updateApiKeyIndicator();
+        resBox.textContent = `⚠️ บันทึก Key ให้แล้ว แต่เซิร์ฟเวอร์ตอบกลับ: ${err.message}`;
+        resBox.className = 'mb-3 px-3 py-2 rounded-xl text-xs font-semibold bg-amber-500/20 text-amber-200 border border-amber-400/40';
+      }
+    }
+
+    function initAudioEngine() {
+      if (audioCtx) {
+        if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+        return;
+      }
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+        mediaSource = audioCtx.createMediaElementSource(audioEl);
+
+        eqFilters = EQ_FREQS.map((freq, idx) => {
+          const filter = audioCtx.createBiquadFilter();
+          filter.type = idx === 0 ? 'lowshelf' : idx === EQ_FREQS.length - 1 ? 'highshelf' : 'peaking';
+          filter.frequency.value = freq;
+          filter.Q.value = 1.4;
+          filter.gain.value = eqMasterEnabled ? currentEqGains[idx] : 0;
+          return filter;
+        });
+
+        bassFilter = audioCtx.createBiquadFilter();
+        bassFilter.type = 'lowshelf';
+        bassFilter.frequency.value = 95;
+        bassFilter.gain.value = currentBassBoost;
+
+        convolverNode = audioCtx.createConvolver();
+        convolverNode.buffer = createHallImpulse(audioCtx, 1.8, 2.5);
+        dryGainNode = audioCtx.createGain();
+        wetGainNode = audioCtx.createGain();
+        dryGainNode.gain.value = 1;
+        wetGainNode.gain.value = currentEchoWet;
+
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 256;
+        analyserNode.smoothingTimeConstant = 0.82;
+
+        let prevNode = mediaSource;
+        eqFilters.forEach((f) => { prevNode.connect(f); prevNode = f; });
+        prevNode.connect(bassFilter);
+        bassFilter.connect(dryGainNode);
+        dryGainNode.connect(analyserNode);
+        bassFilter.connect(convolverNode);
+        convolverNode.connect(wetGainNode);
+        wetGainNode.connect(analyserNode);
+        analyserNode.connect(audioCtx.destination);
+      } catch {}
+    }
+
+    function createHallImpulse(ctx, duration, decay) {
+      const rate = ctx.sampleRate, length = rate * duration, impulse = ctx.createBuffer(2, length, rate);
+      for (let ch = 0; ch < 2; ch++) {
+        const data = impulse.getChannelData(ch);
+        for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+      }
+      return impulse;
+    }
+
+    function applyEqGains() {
+      eqFilters.forEach((filter, idx) => { filter.gain.value = eqMasterEnabled ? currentEqGains[idx] : 0; });
+    }
+
+    function toggleEqMaster() {
+      eqMasterEnabled = !eqMasterEnabled;
+      applyEqGains();
+      updateEqUI();
+      showToast(eqMasterEnabled ? '🎛️ เปิดใช้งานอีควอไลเซอร์แล้ว' : '🎛️ ปิดอีควอไลเซอร์ (Bypass)');
+    }
+
+    function setEqBand(idx, val) {
+      currentEqGains[idx] = parseFloat(val);
+      currentPresetName = 'Custom';
+      applyEqGains();
+      updateEqUI();
+    }
+
+    function applyEqPreset(name) {
+      if (!EQ_PRESETS[name]) return;
+      currentPresetName = name;
+      currentEqGains = [...EQ_PRESETS[name]];
+      if (!eqMasterEnabled) eqMasterEnabled = true;
+      applyEqGains();
+      updateEqUI();
+    }
+
+    function setBassBoost(val) {
+      currentBassBoost = parseFloat(val);
+      if (bassFilter) bassFilter.gain.value = currentBassBoost;
+      document.getElementById('bassBoostLabel').textContent = `${currentBassBoost} dB`;
+      document.getElementById('modalBassLabel').textContent = `${currentBassBoost} dB`;
+      document.getElementById('bassBoostSlider').value = currentBassBoost;
+      document.getElementById('modalBassSlider').value = currentBassBoost;
+    }
+
+    function setEchoWet(val) {
+      currentEchoWet = parseFloat(val);
+      if (wetGainNode) wetGainNode.gain.value = currentEchoWet;
+      const pct = `${Math.round((currentEchoWet / 0.65) * 100)}%`;
+      document.getElementById('echoWetLabel').textContent = pct;
+      document.getElementById('modalEchoLabel').textContent = pct;
+      document.getElementById('echoWetSlider').value = currentEchoWet;
+      document.getElementById('modalEchoSlider').value = currentEchoWet;
+    }
+
+    function setPlaybackSpeed(val) {
+      const rate = parseFloat(val);
+      audioEl.playbackRate = rate;
+      document.getElementById('speedLabel').textContent = `${rate.toFixed(2)}x`;
+    }
+
+    function buildEqControls() {
+      ['sideEqBandsContainer', 'modalEqBandsContainer'].forEach((cid) => {
+        const el = document.getElementById(cid);
+        if (!el) return;
+        el.innerHTML = EQ_LABELS.map((lbl, idx) => `
+          <div class="eq-slider-wrap">
+            <span id="${cid}-val-${idx}" class="text-[9px] font-mono text-cyan-300">0</span>
+            <div class="eq-vertical-box">
+              <input id="${cid}-inp-${idx}" type="range" min="-12" max="12" step="1" value="0" oninput="setEqBand(${idx}, this.value)" class="eq-range" />
+            </div>
+            <span class="text-[9px] font-bold text-slate-400">${lbl}</span>
+          </div>
+        `).join('');
+      });
+
+      ['sideEqPresets', 'modalEqPresets'].forEach((pid) => {
+        const el = document.getElementById(pid);
+        if (!el) return;
+        el.innerHTML = Object.keys(EQ_PRESETS).map((name) => `
+          <button type="button" data-preset="${name}" onclick="applyEqPreset('${name}')"
+            class="preset-btn py-1 px-1 rounded-lg text-[10px] font-bold border border-slate-700/80 bg-slate-800/80 text-slate-300 hover:border-cyan-400 transition">
+            ${name}
+          </button>
+        `).join('');
+      });
+      updateEqUI();
+    }
+
+    function updateEqUI() {
+      const badge = document.getElementById('headerEqStatusBadge');
+      if (badge) {
+        badge.textContent = eqMasterEnabled ? 'ON' : 'OFF';
+        badge.className = eqMasterEnabled
+          ? 'px-1 rounded text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300'
+          : 'px-1 rounded text-[9px] font-extrabold bg-slate-700 text-slate-400';
+      }
+      ['sideEqToggleBtn', 'modalEqToggleBtn'].forEach((id) => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.textContent = eqMasterEnabled ? '● เปิด EQ' : '○ ปิด EQ';
+        btn.className = eqMasterEnabled
+          ? 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/40'
+          : 'px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-800 text-slate-400 border border-slate-700';
+      });
+      ['sideEqBandsContainer', 'modalEqBandsContainer'].forEach((cid) => {
+        EQ_LABELS.forEach((_, idx) => {
+          const inp = document.getElementById(`${cid}-inp-${idx}`);
+          const valEl = document.getElementById(`${cid}-val-${idx}`);
+          const g = currentEqGains[idx];
+          if (inp) inp.value = g;
+          if (valEl) valEl.textContent = g > 0 ? `+${g}` : `${g}`;
+        });
+      });
+      document.querySelectorAll('.preset-btn').forEach((btn) => {
+        const active = btn.dataset.preset === currentPresetName;
+        btn.className = active
+          ? 'preset-btn py-1 px-1 rounded-lg text-[10px] font-extrabold border border-cyan-400 bg-cyan-500/20 text-cyan-300 transition'
+          : 'preset-btn py-1 px-1 rounded-lg text-[10px] font-bold border border-slate-700/80 bg-slate-800/80 text-slate-300 hover:border-cyan-400 transition';
+      });
+    }
+
+    async function handleFileSelection(event) {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+      await ingestFiles(files);
+      event.target.value = '';
+    }
+
+    async function ingestFiles(files) {
+      const audioFiles = [], lrcFiles = [];
+      files.forEach((f) => {
+        const lower = f.name.toLowerCase();
+        if (lower.endsWith('.lrc') || lower.endsWith('.txt')) lrcFiles.push(f);
+        else if (f.type.startsWith('audio/') || /\.(mp3|wav|m4a|ogg|flac|aac|webm)$/i.test(lower)) audioFiles.push(f);
+      });
+
+      const lrcMap = new Map();
+      for (const lf of lrcFiles) {
+        const baseName = lf.name.replace(/\.[^.]+$/, '').toLowerCase().trim();
+        const parsed = parseLrcText(await lf.text());
+        if (parsed.length) lrcMap.set(baseName, parsed);
+      }
+
+      let firstNewIdx = -1;
+      for (const af of audioFiles) {
+        const cleanTitle = af.name.replace(/\.[^.]+$/, '').trim();
+        const newTrack = {
+          id: 'trk_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+          title: cleanTitle,
+          artist: 'ไฟล์เพลงในเครื่อง',
+          duration: 0,
+          blob: af,
+          url: URL.createObjectURL(af),
+          lyrics: lrcMap.get(cleanTitle.toLowerCase()) || []
+        };
+        tracks.push(newTrack);
+        if (firstNewIdx === -1) firstNewIdx = tracks.length - 1;
+        await saveTrackToDB(newTrack);
+      }
+
+      if (!audioFiles.length && lrcFiles.length && currentTrackIndex >= 0) {
+        const firstLrc = Array.from(lrcMap.values())[0];
+        if (firstLrc && firstLrc.length) {
+          tracks[currentTrackIndex].lyrics = firstLrc;
+          await saveTrackToDB(tracks[currentTrackIndex]);
+          renderLyrics();
+          showToast('📄 นำเข้าไฟล์เนื้อเพลง .LRC สำเร็จ!');
+        }
+      }
+
+      renderTrackLists();
+      if (firstNewIdx >= 0) {
+        selectAndPlayTrack(firstNewIdx);
+        showToast(`🎵 เพิ่มเพลง "${tracks[firstNewIdx].title}" เข้าคลังแล้ว`);
+      }
+    }
+
+    function renderTrackLists() {
+      const query = (document.getElementById('sidebarSearchInput')?.value || '').toLowerCase().trim();
+      const filtered = tracks.map((t, idx) => ({ t, idx })).filter(({ t }) => !query || t.title.toLowerCase().includes(query));
+      document.getElementById('headerTrackCount').textContent = tracks.length;
+      document.getElementById('sidebarTrackCount').textContent = `${tracks.length} เพลง`;
+
+      const renderHTML = (list) => {
+        if (!list.length) return `<div class="text-center py-8 text-xs text-slate-500">ยังไม่มีเพลงในคลัง<br/>กด "+ เพิ่มเพลง MP3" เพื่อเริ่มต้น</div>`;
+        return list.map(({ t, idx }) => {
+          const active = idx === currentTrackIndex;
+          const hasLyrics = t.lyrics && t.lyrics.length > 0;
+          return `
+            <div onclick="selectAndPlayTrack(${idx})"
+              class="flex items-center justify-between gap-2 p-2 rounded-xl cursor-pointer border transition ${
+                active ? 'bg-gradient-to-r from-cyan-500/20 to-violet-500/20 border-cyan-400/50 text-white' : 'bg-slate-900/65 hover:bg-slate-800/80 border-slate-800/80 text-slate-300'
+              }">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-extrabold shrink-0 ${active ? 'bg-cyan-400 text-slate-950' : 'bg-slate-800 text-slate-400'}">
+                  ${active && isPlaying ? '▶' : idx + 1}
+                </span>
+                <div class="min-w-0">
+                  <div class="text-xs font-bold truncate">${escapeHtml(t.title)}</div>
+                  <div class="text-[10px] ${hasLyrics ? 'text-emerald-400' : 'text-slate-500'}">
+                    ${hasLyrics ? `🎤 มีเนื้อเพลง (${t.lyrics.length} บรรทัด)` : 'ยังไม่มีเนื้อเพลง'}
+                  </div>
+                </div>
+              </div>
+              <button type="button" onclick="removeTrack(event, ${idx})" class="text-rose-400 hover:text-rose-300 text-xs px-1.5 py-1 rounded">✕</button>
+            </div>
+          `;
+        }).join('');
+      };
+
+      const sideEl = document.getElementById('sidebarTrackList');
+      const modalEl = document.getElementById('modalTrackList');
+      if (sideEl) sideEl.innerHTML = renderHTML(filtered);
+      if (modalEl) modalEl.innerHTML = renderHTML(tracks.map((t, idx) => ({ t, idx })));
+    }
+
+    function selectAndPlayTrack(idx) {
+      if (idx < 0 || idx >= tracks.length) return;
+      currentTrackIndex = idx;
+      const track = tracks[idx];
+      initAudioEngine();
+      audioEl.src = track.url;
+      audioEl.load();
+
+      document.getElementById('nowPlayingTitle').textContent = track.title;
+      document.getElementById('nowPlayingSubtitle').textContent =
+        track.lyrics && track.lyrics.length ? `🎤 ซิงค์เนื้อเพลงแล้ว ${track.lyrics.length} บรรทัด` : 'กดปุ่ม "✨ ถอดเนื้อ 100%" เพื่อสร้างเนื้อร้องอัตโนมัติ';
+      document.getElementById('fullViewSongTitle').textContent = `🎤 ${track.title}`;
+
+      renderLyrics();
+      renderTrackLists();
+      audioEl.play().then(() => { isPlaying = true; updatePlayPauseUI(); }).catch(() => { isPlaying = false; updatePlayPauseUI(); });
+    }
+
+    function togglePlayPause() {
+      if (currentTrackIndex < 0) return tracks.length ? selectAndPlayTrack(0) : showToast('กรุณาเพิ่มไฟล์เพลง MP3 ก่อนกดเล่น');
+      initAudioEngine();
+      if (audioEl.paused) {
+        audioEl.play().then(() => { isPlaying = true; updatePlayPauseUI(); }).catch((e) => showToast('เล่นไม่ได้: ' + e.message));
+      } else {
+        audioEl.pause(); isPlaying = false; updatePlayPauseUI();
+      }
+    }
+
+    function updatePlayPauseUI() {
+      const icon = isPlaying ? '⏸' : '▶';
+      document.getElementById('playPauseBtn').textContent = icon;
+      document.getElementById('fullPlayPauseBtn').textContent = icon;
+      renderTrackLists();
+    }
+
+    function playPrevTrack() { if (tracks.length) selectAndPlayTrack((currentTrackIndex - 1 + tracks.length) % tracks.length); }
+    function playNextTrack() {
+      if (!tracks.length) return;
+      selectAndPlayTrack(isShuffle ? Math.floor(Math.random() * tracks.length) : (currentTrackIndex + 1) % tracks.length);
+    }
+
+    function toggleShuffle() {
+      isShuffle = !isShuffle;
+      document.getElementById('shuffleBtn').className = isShuffle
+        ? 'w-7 h-7 rounded-lg bg-cyan-500/25 text-cyan-300 flex items-center justify-center text-xs border border-cyan-400'
+        : 'w-7 h-7 rounded-lg bg-slate-800/90 text-slate-400 flex items-center justify-center text-xs border border-slate-700/70';
+      showToast(isShuffle ? '🔀 เปิดสุ่มเพลง' : '🔀 ปิดสุ่มเพลง');
+    }
+
+    function toggleLoop() {
+      isLoop = !isLoop;
+      audioEl.loop = isLoop;
+      document.getElementById('loopBtn').className = isLoop
+        ? 'w-7 h-7 rounded-lg bg-pink-500/25 text-pink-300 flex items-center justify-center text-xs border border-pink-400'
+        : 'w-7 h-7 rounded-lg bg-slate-800/90 text-slate-400 flex items-center justify-center text-xs border border-slate-700/70';
+      showToast(isLoop ? '🔁 เล่นซ้ำเพลงนี้' : '🔁 ปิดเล่นซ้ำ');
+    }
+
+    function handleSeekInput(val) {
+      if (audioEl.duration && !isNaN(audioEl.duration)) audioEl.currentTime = (parseFloat(val) / 1000) * audioEl.duration;
+    }
+    function setVolume(val) {
+      audioEl.volume = parseFloat(val);
+      document.getElementById('muteBtn').textContent = audioEl.volume === 0 ? '🔇' : '🔊';
+    }
+    function toggleMute() {
+      audioEl.muted = !audioEl.muted;
+      document.getElementById('muteBtn').textContent = audioEl.muted ? '🔇' : '🔊';
+    }
+
+    async function removeTrack(e, idx) {
+      e.stopPropagation();
+      const target = tracks[idx];
+      if (!target) return;
+      if (target.url) URL.revokeObjectURL(target.url);
+      await deleteTrackFromDB(target.id);
+      tracks.splice(idx, 1);
+      if (idx === currentTrackIndex) {
+        audioEl.pause(); audioEl.src = ''; isPlaying = false;
+        currentTrackIndex = tracks.length ? 0 : -1;
+        updatePlayPauseUI();
+        if (currentTrackIndex >= 0) selectAndPlayTrack(0);
+        else { document.getElementById('nowPlayingTitle').textContent = 'ยังไม่มีเพลงในคลัง'; renderLyrics(); }
+      } else if (idx < currentTrackIndex) currentTrackIndex--;
+      renderTrackLists();
+    }
+
+    async function clearAllTracks() {
+      tracks.forEach((t) => t.url && URL.revokeObjectURL(t.url));
+      tracks = []; currentTrackIndex = -1; audioEl.pause(); audioEl.src = ''; isPlaying = false; updatePlayPauseUI();
+      try { (await openDB()).transaction(DB_STORE, 'readwrite').objectStore(DB_STORE).clear(); } catch {}
+      document.getElementById('nowPlayingTitle').textContent = 'ยังไม่มีเพลงในคลัง';
+      renderTrackLists(); renderLyrics();
+      showToast('🗑️ ล้างคลังเพลงทั้งหมดเรียบร้อย');
+    }
+
+    async function transcribeCurrentTrack100() {
+      if (currentTrackIndex < 0) return showToast('กรุณาเพิ่มและเลือกเพลง MP3 ก่อนกดถอดเนื้อเพลง');
+      if (isTranscribing) return;
+
+      const userKey = getSavedApiKey();
+      const isExternalHost = !window.location.hostname.includes('googleusercontent.com');
+      if (!userKey && isExternalHost) {
+        openApiKeyModal();
+        return showToast('🔑 กรุณาใส่ Gemini API Key ก่อนถอดเนื้อเพลงบนมือถือ');
+      }
+
+      const track = tracks[currentTrackIndex];
+      if (!track || !track.blob) return showToast('ไม่พบไฟล์เสียงสำหรับถอดเนื้อเพลง');
+
+      isTranscribing = true;
+      const progBox = document.getElementById('transcribeProgressBox');
+      const statusText = document.getElementById('transcribeStatusText');
+      const pctText = document.getElementById('transcribePercentText');
+      const progBar = document.getElementById('transcribeProgressBar');
+      progBox.classList.remove('hidden');
+
+      const setProgress = (pct, msg) => {
+        pctText.textContent = `${Math.round(pct)}%`;
+        progBar.style.width = `${pct}%`;
+        statusText.textContent = msg;
+      };
+
+      try {
+        setProgress(8, 'กำลังแปลงไฟล์เสียงทั้งเพลงเป็น 16kHz Mono...');
+        const arrayBuf = await track.blob.arrayBuffer();
+        const decodeCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const decoded = await decodeCtx.decodeAudioData(arrayBuf);
+        const totalDuration = decoded.duration;
+
+        const targetRate = 16000;
+        const offlineCtx = new OfflineAudioContext(1, Math.ceil(totalDuration * targetRate), targetRate);
+        const src = offlineCtx.createBufferSource();
+        src.buffer = decoded;
+        src.connect(offlineCtx.destination);
+        src.start(0);
+        const channelData = (await offlineCtx.startRendering()).getChannelData(0);
+
+        const chunkSec = 60, overlapSec = 3, stepSec = chunkSec - overlapSec, chunks = [];
+        for (let start = 0; start < totalDuration; start += stepSec) {
+          const end = Math.min(totalDuration, start + chunkSec);
+          chunks.push({ start, end });
+          if (end >= totalDuration) break;
+        }
+
+        let allLines = [];
+        for (let i = 0; i < chunks.length; i++) {
+          const { start, end } = chunks[i];
+          const basePct = 15 + (i / chunks.length) * 78;
+          setProgress(basePct, `กำลังถอดเนื้อเพลงช่วงที่ ${i + 1}/${chunks.length} (${formatTime(start)} - ${formatTime(end)})...`);
+
+          const slice = channelData.slice(Math.floor(start * targetRate), Math.floor(end * targetRate));
+          const wavBase64 = encodePcmToWavBase64(slice, targetRate);
+          const prompt = `Transcribe 100% of the sung vocals/lyrics in this ${(end - start).toFixed(1)}-second audio clip in its exact original language (Thai, Isan, Lao, English, etc.).
+Return ONLY valid JSON:
+{"lines":[{"start":0.5,"end":3.8,"text":"full sung line","words":[{"w":"word1","s":0.5,"e":1.6},{"w":"word2","s":1.6,"e":3.8}]}]}
+Rules: Transcribe every single lyric line accurately from start to end without skipping. Timestamps must be in seconds relative to clip start.`;
+
+          const data = await generateWithFallbackModels(
+            userKey,
+            {
+              contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: 'audio/wav', data: wavBase64 } }] }],
+              generationConfig: { temperature: 0.1, responseMimeType: 'application/json' }
+            },
+            (retryMsg) => setProgress(basePct, retryMsg)
+          );
+
+          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{"lines":[]}';
+          const parsed = JSON.parse(rawText.replace(/^```json\s*/i, '').replace(/```$/i, '').trim());
+          (parsed.lines || []).forEach((line) => {
+            const absStart = +(start + line.start).toFixed(2);
+            const absEnd = +(start + line.end).toFixed(2);
+            allLines.push({
+              start: absStart,
+              end: Math.max(absStart + 0.4, absEnd),
+              text: line.text.trim(),
+              words: (line.words || []).map((w) => ({ w: w.w, s: +(start + w.s).toFixed(2), e: +(start + w.e).toFixed(2) }))
+            });
+          });
+        }
+
+        allLines.sort((a, b) => a.start - b.start);
+        const deduped = [];
+        for (const line of allLines) {
+          if (!line.text) continue;
+          const prev = deduped[deduped.length - 1];
+          if (prev && Math.abs(prev.start - line.start) < 2.2 && prev.text === line.text) continue;
+          if (prev && prev.end > line.start) prev.end = Math.max(prev.start + 0.3, line.start - 0.05);
+          deduped.push(line);
+        }
+
+        if (!deduped.length) throw new Error('ไม่พบเสียงร้องในไฟล์เพลงนี้');
+        setProgress(98, 'กำลังจัดตำแหน่งแถบสีให้ตรงกับคำร้อง 100%...');
+        track.lyrics = deduped;
+        await saveTrackToDB(track);
+        renderLyrics();
+        renderTrackLists();
+        document.getElementById('nowPlayingSubtitle').textContent = `🎤 ถอดเนื้อเพลงครบ 100% (${deduped.length} บรรทัด)`;
+        setProgress(100, `✅ ถอดเนื้อเพลงครบ 100% (${deduped.length} บรรทัด) เรียบร้อย!`);
+        showToast(`✨ ถอดเนื้อเพลงครบ 100% (${deduped.length} บรรทัด) สำเร็จ!`);
+        setTimeout(() => progBox.classList.add('hidden'), 2800);
+      } catch (err) {
+        progBox.classList.add('hidden');
+        showToast(`❌ ${err.message}`);
+      } finally {
+        isTranscribing = false;
+      }
+    }
+
+    function encodePcmToWavBase64(samples, sampleRate) {
+      const n = samples.length, buffer = new ArrayBuffer(44 + n * 2), view = new DataView(buffer);
+      const ws = (o, s) => { for (let i = 0; i < s.length; i++) view.setUint8(o + i, s.charCodeAt(i)); };
+      ws(0, 'RIFF'); view.setUint32(4, 36 + n * 2, true); ws(8, 'WAVE'); ws(12, 'fmt ');
+      view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true); view.setUint16(34, 16, true); ws(36, 'data'); view.setUint32(40, n * 2, true);
+      for (let i = 0; i < n; i++) {
+        const s = Math.max(-1, Math.min(1, samples[i]));
+        view.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+      }
+      const bytes = new Uint8Array(buffer);
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      return btoa(bin);
+    }
+
+    let lastActiveLineIdx = -1;
+
+    function renderLyrics() {
+      const track = tracks[currentTrackIndex];
+      const lyrics = track && Array.isArray(track.lyrics) ? track.lyrics : [];
+      const emptyEl = document.getElementById('emptyLyricsState');
+      const mainContainer = document.getElementById('lyricsContainer');
+      const fullContainer = document.getElementById('fullLyricsContainer');
+
+      if (!lyrics.length) {
+        emptyEl.classList.remove('hidden');
+        mainContainer.innerHTML = '';
+        fullContainer.innerHTML = `<div class="text-center text-slate-400 py-20 text-sm">ยังไม่มีเนื้อเพลง กดปุ่ม "✨ ถอดเนื้อ 100%" ด้านบน</div>`;
+        return;
+      }
+      emptyEl.classList.add('hidden');
+      const buildHtml = (prefix) => lyrics.map((line, idx) => `
+        <div id="${prefix}-line-${idx}" onclick="seekToLyricLine(${idx})" class="lyric-line">
+          <span class="lyric-text-wrap">
+            <span class="lyric-base">${escapeHtml(line.text)}</span>
+            <span id="${prefix}-fill-${idx}" class="lyric-fill">${escapeHtml(line.text)}</span>
+          </span>
+        </div>
+      `).join('');
+      mainContainer.innerHTML = buildHtml('main');
+      fullContainer.innerHTML = buildHtml('full');
+      lastActiveLineIdx = -1;
+    }
+
+    function computeWordSweepPct(line, t) {
+      if (t <= line.start) return 0;
+      if (t >= line.end) return 100;
+      if (Array.isArray(line.words) && line.words.length > 0) {
+        const totalChars = line.words.reduce((sum, w) => sum + (w.w ? w.w.length : 1), 0) || 1;
+        let accChars = 0;
+        for (const w of line.words) {
+          const wLen = w.w ? w.w.length : 1;
+          if (t < w.s) return (accChars / totalChars) * 100;
+          if (t >= w.s && t <= w.e) return ((accChars + ((t - w.s) / Math.max(0.05, w.e - w.s)) * wLen) / totalChars) * 100;
+          accChars += wLen;
+        }
+        return 100;
+      }
+      return Math.min(100, Math.max(0, ((t - line.start) / Math.max(0.1, line.end - line.start)) * 100));
+    }
+
+    function updateKaraokeSync() {
+      const track = tracks[currentTrackIndex];
+      if (!track || !track.lyrics || !track.lyrics.length) return;
+      const t = audioEl.currentTime + syncOffset;
+      const lyrics = track.lyrics;
+      let activeIdx = -1;
+      for (let i = 0; i < lyrics.length; i++) {
+        if (t >= lyrics[i].start && t <= lyrics[i].end) { activeIdx = i; break; }
+      }
+      ['main', 'full'].forEach((prefix) => {
+        for (let i = 0; i < lyrics.length; i++) {
+          const lineEl = document.getElementById(`${prefix}-line-${i}`);
+          const fillEl = document.getElementById(`${prefix}-fill-${i}`);
+          if (!lineEl || !fillEl) continue;
+          if (i === activeIdx) {
+            lineEl.classList.add('active'); lineEl.classList.remove('past');
+            fillEl.style.clipPath = `inset(0 ${(100 - computeWordSweepPct(lyrics[i], t)).toFixed(2)}% 0 0)`;
+          } else if (t > lyrics[i].end) {
+            lineEl.classList.remove('active'); lineEl.classList.add('past');
+            fillEl.style.clipPath = 'inset(0 0% 0 0)';
+          } else {
+            lineEl.classList.remove('active', 'past');
+            fillEl.style.clipPath = 'inset(0 100% 0 0)';
+          }
+        }
+      });
+      if (activeIdx !== -1 && activeIdx !== lastActiveLineIdx) {
+        lastActiveLineIdx = activeIdx;
+        document.getElementById(`main-line-${activeIdx}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (!document.getElementById('fullLyricsView').classList.contains('hidden')) {
+          document.getElementById(`full-line-${activeIdx}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+
+    function seekToLyricLine(idx) {
+      const track = tracks[currentTrackIndex];
+      if (track && track.lyrics[idx]) {
+        audioEl.currentTime = Math.max(0, track.lyrics[idx].start - syncOffset);
+        if (audioEl.paused) togglePlayPause();
+      }
+    }
+
+    function adjustSyncOffset(delta) {
+      syncOffset = +(syncOffset + delta).toFixed(2);
+      const badge = document.getElementById('syncOffsetBadge');
+      if (badge) badge.textContent = `${syncOffset >= 0 ? '+' : ''}${syncOffset.toFixed(2)}s`;
+      showToast(`⏱️ ปรับจังหวะเนื้อเพลง: ${syncOffset >= 0 ? '+' : ''}${syncOffset.toFixed(2)}s`);
+    }
+
+    let tapSyncCursor = 0;
+    function openLyricEditorModal() {
+      if (currentTrackIndex < 0) return showToast('กรุณาเพิ่มเพลง MP3 ก่อนแก้ไขเนื้อเพลง');
+      const track = tracks[currentTrackIndex];
+      document.getElementById('lyricEditorTextarea').value = (track.lyrics || []).map((l) => `[${formatLrcTimestamp(l.start)}] ${l.text}`).join('\n');
+      tapSyncCursor = 0;
+      openModal('lyricEditorModal');
+    }
+
+    function autoAlignPlainLyricsToVocal() {
+      const rawLines = document.getElementById('lyricEditorTextarea').value.split('\n').map((l) => l.replace(/\[\d{2}:\d{2}(?:\.\d{2,3})?\]/g, '').trim()).filter(Boolean);
+      if (!rawLines.length) return showToast('กรุณาวางข้อความเนื้อเพลงก่อน');
+      const dur = audioEl.duration && !isNaN(audioEl.duration) ? audioEl.duration : rawLines.length * 4;
+      const intro = Math.min(4, dur * 0.06), step = Math.max(4, dur - intro * 1.5) / rawLines.length;
+      document.getElementById('lyricEditorTextarea').value = rawLines.map((t, i) => `[${formatLrcTimestamp(intro + i * step)}] ${t}`).join('\n');
+      showToast('⚡ จัดเวลาซิงค์ครบทุกบรรทัดแล้ว กดบันทึกได้เลย!');
+    }
+
+    function tapSyncNextLine() {
+      const ta = document.getElementById('lyricEditorTextarea'), lines = ta.value.split('\n');
+      while (tapSyncCursor < lines.length && !lines[tapSyncCursor].trim()) tapSyncCursor++;
+      if (tapSyncCursor >= lines.length) { tapSyncCursor = 0; return showToast('รีเซ็ตกลับไปบรรทัดแรก'); }
+      const clean = lines[tapSyncCursor].replace(/\[\d{2}:\d{2}(?:\.\d{2,3})?\]/g, '').trim();
+      lines[tapSyncCursor] = `[${formatLrcTimestamp(audioEl.currentTime)}] ${clean}`;
+      ta.value = lines.join('\n');
+      tapSyncCursor++;
+      showToast(`👆 บันทึกบรรทัดที่ ${tapSyncCursor}`);
+    }
+
+    async function saveEditedLyrics() {
+      if (currentTrackIndex < 0) return;
+      tracks[currentTrackIndex].lyrics = parseLrcText(document.getElementById('lyricEditorTextarea').value);
+      await saveTrackToDB(tracks[currentTrackIndex]);
+      renderLyrics(); renderTrackLists(); closeModal('lyricEditorModal');
+      showToast('💾 บันทึกเนื้อเพลงเรียบร้อย!');
+    }
+
+    function parseLrcText(text) {
+      const items = [], regex = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]\s*(.*)/;
+      text.split('\n').forEach((raw) => {
+        const m = raw.trim().match(regex);
+        if (m && m[4].trim()) {
+          const start = +(parseInt(m[1], 10) * 60 + parseInt(m[2], 10) + (m[3] ? parseInt(m[3].padEnd(3, '0'), 10) / 1000 : 0)).toFixed(2);
+          items.push({ start, end: start + 4, text: m[4].trim() });
+        }
+      });
+      items.sort((a, b) => a.start - b.start);
+      for (let i = 0; i < items.length; i++) items[i].end = i < items.length - 1 ? Math.max(items[i].start + 0.4, items[i + 1].start - 0.05) : items[i].start + 5;
+      return items;
+    }
+
+    function exportCurrentLrc() {
+      if (currentTrackIndex < 0 || !tracks[currentTrackIndex].lyrics.length) return showToast('ยังไม่มีเนื้อเพลงสำหรับส่งออก');
+      const track = tracks[currentTrackIndex];
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([track.lyrics.map((l) => `[${formatLrcTimestamp(l.start)}] ${l.text}`).join('\n')], { type: 'text/plain;charset=utf-8' }));
+      a.download = `${track.title}.lrc`;
+      a.click();
+    }
+
+    function buildVisMenu() {
+      document.getElementById('visModeOptionsList').innerHTML = VIS_MODES.map((m, idx) => `
+        <button type="button" onclick="selectVisualizerMode(${idx})"
+          class="w-full text-left px-2.5 py-1.5 rounded-xl flex items-center gap-2 transition ${idx === visModeIndex ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-extrabold' : 'hover:bg-slate-800 text-slate-200 font-semibold'}">
+          <span class="text-base">${m.icon}</span>
+          <div class="min-w-0"><div class="text-xs truncate">${m.name}</div><div class="text-[9px] text-slate-400 truncate">${m.desc}</div></div>
+        </button>
+      `).join('');
+    }
+
+    function toggleVisPopover(e) {
+      e.stopPropagation();
+      const menu = document.getElementById('visPopoverMenu');
+      if (!menu.classList.contains('hidden')) return menu.classList.add('hidden');
+      buildVisMenu();
+      const rect = e.currentTarget.getBoundingClientRect();
+      menu.style.top = `${rect.bottom + 6}px`;
+      menu.style.right = `${Math.max(8, window.innerWidth - rect.right)}px`;
+      menu.classList.remove('hidden');
+    }
+
+    function selectVisualizerMode(idx) {
+      visModeIndex = idx; visEnabled = true;
+      const mode = VIS_MODES[visModeIndex];
+      document.getElementById('visModeCaption').textContent = `${mode.icon} ${mode.name} — ${mode.desc}`;
+      document.getElementById('visBtnLabel').textContent = `${mode.icon} ${mode.name} ▾`;
+      document.getElementById('visPopoverMenu').classList.add('hidden');
+    }
+
+    function cycleVisualizerMode() { selectVisualizerMode((visModeIndex + 1) % VIS_MODES.length); }
+    function toggleVisualizerEnabled() {
+      visEnabled = !visEnabled;
+      document.getElementById('visPowerToggleBtn').textContent = visEnabled ? 'เปิดอยู่' : 'ปิดคลื่น';
+      document.getElementById('visPopoverMenu').classList.add('hidden');
+    }
+
+    document.addEventListener('click', (e) => {
+      const menu = document.getElementById('visPopoverMenu'), trig = document.getElementById('visDropdownTrigger');
+      if (menu && !menu.contains(e.target) && trig && !trig.contains(e.target)) menu.classList.add('hidden');
+    });
+
+    function initParticles() {
+      particles = Array.from({ length: 40 }, () => ({ x: Math.random(), y: Math.random(), vx: (Math.random() - 0.5) * 0.003, vy: (Math.random() - 0.5) * 0.003, hue: Math.floor(Math.random() * 360), r: 2 + Math.random() * 3 }));
+    }
+
+    function startRenderLoop() {
+      const canvas = document.getElementById('visualizerCanvas'), ctx = canvas.getContext('2d'), freqData = new Uint8Array(128);
+      function frame(now) {
+        requestAnimationFrame(frame);
+        if (!isNaN(audioEl.duration) && audioEl.duration > 0) {
+          const pct = (audioEl.currentTime / audioEl.duration) * 1000;
+          document.getElementById('seekSlider').value = pct; document.getElementById('fullSeekSlider').value = pct;
+          document.getElementById('currentTimeLabel').textContent = formatTime(audioEl.currentTime);
+          document.getElementById('durationTimeLabel').textContent = formatTime(audioEl.duration);
+          document.getElementById('fullCurrentTime').textContent = formatTime(audioEl.currentTime);
+          document.getElementById('fullDurationTime').textContent = formatTime(audioEl.duration);
+        }
+        updateKaraokeSync();
+
+        const dpr = Math.min(window.devicePixelRatio || 1, 2), w = canvas.clientWidth, h = canvas.clientHeight;
+        if (w > 0 && h > 0 && (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr))) {
+          canvas.width = Math.floor(w * dpr); canvas.height = Math.floor(h * dpr);
+        }
+        ctx.save(); ctx.scale(dpr, dpr); ctx.clearRect(0, 0, w, h);
+        if (!visEnabled) { ctx.restore(); return; }
+
+        const tSec = now * 0.001;
+        if (analyserNode && isPlaying) analyserNode.getByteFrequencyData(freqData);
+        else for (let i = 0; i < freqData.length; i++) freqData[i] = Math.floor(((Math.sin(i * 0.22 + tSec * 2.6) * 0.5 + 0.5) * 0.65 + (Math.cos(i * 0.11 - tSec * 1.8) * 0.5 + 0.5) * 0.35) * 155 + 25);
+
+        const mode = VIS_MODES[visModeIndex].id;
+        if (mode === 'rainbow') {
+          const bars = 46, gap = 3, barW = Math.max(2, (w - gap * (bars + 1)) / bars), baseLine = h * 0.78;
+          for (let i = 0; i < bars; i++) {
+            const barH = Math.max(4, (freqData[i] / 255) * (h * 0.58)), x = gap + i * (barW + gap), y = baseLine - barH, hue = (i * 7 + tSec * 40) % 360;
+            const grad = ctx.createLinearGradient(x, y, x, baseLine);
+            grad.addColorStop(0, `hsla(${hue}, 95%, 62%, 0.98)`); grad.addColorStop(1, `hsla(${(hue + 50) % 360}, 90%, 48%, 0.35)`);
+            ctx.fillStyle = grad; ctx.beginPath(); ctx.roundRect(x, y, barW, barH, 3); ctx.fill();
+            ctx.fillStyle = `hsla(${hue}, 95%, 60%, 0.14)`; ctx.fillRect(x, baseLine + 2, barW, barH * 0.28);
+            peakCaps[i] = barH > peakCaps[i] ? barH : Math.max(2, peakCaps[i] - 1.2);
+            ctx.fillStyle = '#fff'; ctx.fillRect(x, baseLine - peakCaps[i] - 3, barW, 2);
+          }
+        } else if (mode === 'wave') {
+          [{ c: '#00f5d4', s: 2.8, a: 0.34, o: 0 }, { c: '#8b5cf6', s: -2.1, a: 0.28, o: 1.5 }, { c: '#ff2a85', s: 3.4, a: 0.22, o: 3.1 }].forEach((l) => {
+            ctx.beginPath(); ctx.strokeStyle = l.c; ctx.lineWidth = 2.6;
+            for (let x = 0; x <= w; x += 6) {
+              const y = h * 0.52 + Math.sin(x * 0.025 + tSec * l.s + l.o) * (freqData[Math.floor((x / w) * 64)] / 255) * h * l.a;
+              x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+          });
+        } else if (mode === 'ring') {
+          const cx = w * 0.5, cy = h * 0.5, radius = Math.min(w, h) * 0.23 + ((freqData[2] + freqData[4]) / 510) * 10;
+          ringRotation += 0.012;
+          for (let i = 0; i < 48; i++) {
+            const angle = (i / 48) * Math.PI * 2 + ringRotation, len = 6 + (freqData[i] / 255) * 32;
+            ctx.strokeStyle = `hsla(${(i * 7.5 + tSec * 50) % 360}, 95%, 62%, 0.9)`; ctx.lineWidth = 2.4;
+            ctx.beginPath(); ctx.moveTo(cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius);
+            ctx.lineTo(cx + Math.cos(angle) * (radius + len), cy + Math.sin(angle) * (radius + len)); ctx.stroke();
+          }
+        } else if (mode === 'aurora') {
+          const midY = h * 0.55, grad = ctx.createLinearGradient(0, 0, w, 0);
+          grad.addColorStop(0, 'rgba(0,245,212,0.75)'); grad.addColorStop(0.5, 'rgba(139,92,246,0.85)'); grad.addColorStop(1, 'rgba(255,42,133,0.75)');
+          ctx.fillStyle = grad; ctx.beginPath(); ctx.moveTo(0, midY);
+          for (let x = 0; x <= w; x += 8) ctx.lineTo(x, midY - (freqData[Math.floor((x / w) * 60)] / 255) * (h * 0.36) * (0.6 + 0.4 * Math.sin(x * 0.03 + tSec * 4)));
+          for (let x = w; x >= 0; x -= 8) ctx.lineTo(x, midY + (freqData[Math.floor((x / w) * 60)] / 255) * (h * 0.24) * (0.6 + 0.4 * Math.cos(x * 0.03 - tSec * 3)));
+          ctx.closePath(); ctx.fill();
+        } else if (mode === 'particles') {
+          const energy = freqData[4] / 255;
+          particles.forEach((p, idx) => {
+            p.x = (p.x + p.vx * (1 + energy * 2.5) + 1) % 1; p.y = (p.y + p.vy * (1 + energy * 2.5) + 1) % 1;
+            const px = p.x * w, py = p.y * h;
+            ctx.fillStyle = `hsla(${(p.hue + tSec * 45) % 360}, 95%, 65%, 0.9)`;
+            ctx.beginPath(); ctx.arc(px, py, p.r + (freqData[idx % 48] / 255) * 4, 0, Math.PI * 2); ctx.fill();
+          });
+        } else {
+          const bars = 40, gap = 3, barW = Math.max(2, (w - gap * (bars + 1)) / bars), midY = h * 0.52;
+          for (let i = 0; i < bars; i++) {
+            const halfH = Math.max(3, (freqData[i] / 255) * (h * 0.36)), x = gap + i * (barW + gap);
+            ctx.fillStyle = `hsla(${(180 + i * 4.5 + Math.sin(tSec) * 30) % 360}, 95%, 60%, 0.95)`;
+            ctx.beginPath(); ctx.roundRect(x, midY - halfH, barW, halfH - 1, 2); ctx.roundRect(x, midY + 1, barW, halfH - 1, 2); ctx.fill();
+          }
+        }
+        ctx.restore();
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function setActiveView(view) {
+      const fullView = document.getElementById('fullLyricsView');
+      const tabMain = document.getElementById('tabMainView'), tabFull = document.getElementById('tabFullLyricsView');
+      if (view === 'full') {
+        fullView.classList.remove('hidden');
+        tabFull.className = 'px-2 py-1 rounded-lg text-[11px] font-bold bg-pink-500/25 text-pink-300 border border-pink-400/50 whitespace-nowrap';
+        tabMain.className = 'px-2 py-1 rounded-lg text-[11px] font-bold bg-slate-800/85 text-slate-300 border border-slate-700/80 whitespace-nowrap';
+      } else {
+        fullView.classList.add('hidden');
+        tabMain.className = 'px-2 py-1 rounded-lg text-[11px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 whitespace-nowrap';
+        tabFull.className = 'px-2 py-1 rounded-lg text-[11px] font-bold bg-slate-800/85 text-slate-300 border border-slate-700/80 whitespace-nowrap';
+      }
+    }
+
+    function openModal(id) { document.getElementById(id)?.classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id)?.classList.add('hidden'); }
+    function formatTime(sec) {
+      if (!sec || isNaN(sec)) return '00:00';
+      return `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
+    }
+    function formatLrcTimestamp(sec) {
+      return `${formatTime(sec)}.${String(Math.floor((sec % 1) * 100)).padStart(2, '0')}`;
+    }
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const box = document.getElementById('toastBox');
+      document.getElementById('toastMessage').textContent = msg;
+      box.classList.remove('opacity-0');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => box.classList.add('opacity-0'), 2800);
+    }
+
+    audioEl.addEventListener('ended', () => { if (!isLoop) playNextTrack(); });
+    audioEl.addEventListener('play', () => { isPlaying = true; updatePlayPauseUI(); });
+    audioEl.addEventListener('pause', () => { isPlaying = false; updatePlayPauseUI(); });
+
+    (async function initApp() {
+      buildEqControls();
+      initParticles();
+      updateApiKeyIndicator();
+      startRenderLoop();
+      const savedTracks = await loadTracksFromDB();
+      if (savedTracks.length) {
+        tracks = savedTracks;
+        renderTrackLists();
+        currentTrackIndex = 0;
+        audioEl.src = tracks[0].url;
+        document.getElementById('nowPlayingTitle').textContent = tracks[0].title;
+        document.getElementById('nowPlayingSubtitle').textContent = tracks[0].lyrics?.length ? `🎤 ซิงค์เนื้อเพลงแล้ว ${tracks[0].lyrics.length} บรรทัด` : 'พร้อมเล่นเพลง';
+        document.getElementById('fullViewSongTitle').textContent = `🎤 ${tracks[0].title}`;
+        renderLyrics();
+      } else {
+        renderTrackLists();
+        renderLyrics();
+      }
+    })();
+  </script>
+</body>
+</html>
